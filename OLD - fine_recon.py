@@ -11,29 +11,6 @@ import data
 import modules
 import utils
 
-import MinkowskiEngine as ME  # Added for sparse convolutions
-
-
-class SparseCnn3d(torch.nn.Module):
-    def __init__(self, in_channels):
-        super().__init__()
-        self.net = ME.MinkowskiSequential(
-            ME.MinkowskiConvolution(
-                in_channels, 32, kernel_size=3, stride=1, dimension=3
-            ),
-            ME.MinkowskiBatchNorm(32),
-            ME.MinkowskiReLU(),
-            ME.MinkowskiConvolution(
-                32, 32, kernel_size=3, stride=1, dimension=3
-            ),
-            ME.MinkowskiBatchNorm(32),
-            ME.MinkowskiReLU(),
-        )
-        self.out_c = 32
-
-    def forward(self, x):
-        return self.net(x)
-
 
 class FineRecon(pl.LightningModule):
     def __init__(self, config):
@@ -55,9 +32,7 @@ class FineRecon(pl.LightningModule):
             elif self.dg.tsdf_fusion_channel:
                 self.voxel_feat_dim += 1
 
-        # Replace dense 3D convolutions with sparse convolutions
-        self.cnn3d = SparseCnn3d(in_channels=self.voxel_feat_dim)
-        self.cnn3d_out_c = self.cnn3d.out_c
+        self.cnn3d = modules.Cnn3d(in_c=self.voxel_feat_dim)
 
         if self.config.point_backprojection:
             self.cnn2d_pb_out_dim = img_feature_dim
@@ -68,7 +43,7 @@ class FineRecon(pl.LightningModule):
             )
             self.point_fusion = modules.FeatureFusion(in_c=self.cnn2d_pb_out_dim)
 
-        surface_pred_input_dim = occ_pred_input_dim = self.cnn3d_out_c
+        surface_pred_input_dim = occ_pred_input_dim = self.cnn3d.out_c
         if self.config.point_backprojection:
             surface_pred_input_dim += self.cnn2d_pb_out_dim
 
@@ -85,11 +60,11 @@ class FineRecon(pl.LightningModule):
             modules.ResBlock1d(32),
             torch.nn.Conv1d(32, 1, 1),
         )
-        # Refine Voxel Occupancy Prediction: make the network more lightweight
         self.occ_predictor = torch.nn.Sequential(
-            torch.nn.Conv1d(occ_pred_input_dim, 16, 1),
-            torch.nn.ReLU(),
-            torch.nn.Conv1d(16, 1, 1),
+            torch.nn.Conv1d(occ_pred_input_dim, 32, 1),
+            modules.ResBlock1d(32),
+            modules.ResBlock1d(32),
+            torch.nn.Conv1d(32, 1, 1),
         )
 
         if self.config.do_prediction_timing:
@@ -272,9 +247,7 @@ class FineRecon(pl.LightningModule):
             )[None, None, :, None]
             uv[:, :, 0].clamp_(0, imwidth)
             uv[:, :, 1].clamp_(0, imheight)
-            border_dist = (
-                (uv / featsize).round() * featsize - uv
-            ).abs().min(dim=2)[0]
+            border_dist = ((uv / featsize).round() * featsize - uv).abs().min(dim=2)[0]
             pixel_margin = 20
             weight = (border_dist / pixel_margin).clamp(0, 1)
             weight = torch.sigmoid(weight * 12 - 6)
@@ -357,41 +330,6 @@ class FineRecon(pl.LightningModule):
 
         return loss, tsdf_loss, occ_loss
 
-    def create_sparse_tensor(self, voxel_feats, voxel_valid):
-        batch_size = voxel_feats.shape[0]
-        features = []
-        coordinates = []
-
-        for b in range(batch_size):
-            valid_mask = voxel_valid[b]
-            coords = valid_mask.nonzero(as_tuple=False)  # N x 3
-            feats = voxel_feats[b, :, coords[:, 0], coords[:, 1], coords[:, 2]]  # C x N
-
-            batch_coords = torch.cat(
-                [
-                    torch.full(
-                        (coords.shape[0], 1),
-                        b,
-                        device=coords.device,
-                        dtype=coords.dtype,
-                    ),
-                    coords,
-                ],
-                dim=1,
-            )
-            features.append(feats.T)
-            coordinates.append(batch_coords)
-
-        all_features = torch.cat(features, dim=0)  # Total_N x C
-        all_coordinates = torch.cat(coordinates, dim=0)  # Total_N x 4
-
-        sparse_tensor = ME.SparseTensor(
-            features=all_features,
-            coordinates=all_coordinates,
-            device=voxel_feats.device,
-        )
-        return sparse_tensor
-
     def step(self, batch):
         if self.dg.enabled:
             if self.training and self.dg.depth_scale_augmentation:
@@ -437,22 +375,13 @@ class FineRecon(pl.LightningModule):
             voxel_feats = self.fusion(voxel_feats, voxel_valid)
             voxel_valid = voxel_valid.sum(dim=1) > 1
 
-        # Prepare sparse tensor for sparse convolutions
-        sparse_voxel_feats = self.create_sparse_tensor(voxel_feats, voxel_valid)
-        sparse_output_feats = self.cnn3d(sparse_voxel_feats)
-
-        # Map sparse output back to dense tensor
-        output_feats = sparse_output_feats.dense(sparse_output_feats.coordinate_map_key, torch.Size([voxel_feats.shape[0], self.cnn3d.out_c] + list(voxel_feats.shape[2:])))
-        output_feats = output_feats.squeeze(0)  # Remove batch dimension if necessary
-
-        # Flatten features for occupancy prediction
-        coarse_point_feats = output_feats.view(*output_feats.shape[:2], -1)
-        coarse_point_valid = voxel_valid.view(voxel_valid.shape[0], -1)
+        voxel_feats = self.cnn3d(voxel_feats, voxel_valid)
 
         if self.config.improved_tsdf_sampling:
             """
             interpolate the features to the points where we have GT tsdf
             """
+
             t = batch["crop_center"]
             R = batch["crop_rotation"]
             coords = batch["output_coords"]
@@ -466,7 +395,7 @@ class FineRecon(pl.LightningModule):
                 coarse_point_feats,
                 coarse_point_valid,
             ) = self.sample_point_features_by_linear_interp(
-                coords_local, output_feats, voxel_valid, origin
+                coords_local, voxel_feats, voxel_valid, origin
             )
         else:
             """
@@ -474,7 +403,7 @@ class FineRecon(pl.LightningModule):
             GT tsdf has already been interpolated to these points
             """
 
-            coarse_point_feats = output_feats.view(*output_feats.shape[:2], -1)
+            coarse_point_feats = voxel_feats.view(*voxel_feats.shape[:2], -1)
             coarse_point_valid = voxel_valid.view(voxel_valid.shape[0], -1)
 
         if self.config.point_backprojection:
@@ -571,7 +500,7 @@ class FineRecon(pl.LightningModule):
             "occ_logits": occ_logits,
         }
         return outputs
-    
+
     def training_step(self, batch, batch_idx):
         outputs = self.step(batch)
 
