@@ -19,11 +19,11 @@ TARGET_RGB_IMG_SIZE = (480, 640)
 
 def get_scans(dataset_dir, tsdf_dir, pred_depth_dir):
     with open(os.path.join(dataset_dir, "train.txt"), "r") as f:
-        train_scan_names = sorted(set(f.read().strip().split()))
+        train_scan_names = sorted(set(f.read().strip().splitlines()))
     with open(os.path.join(dataset_dir, "val.txt"), "r") as f:
-        val_scan_names = sorted(set(f.read().strip().split()))
+        val_scan_names = sorted(set(f.read().strip().splitlines()))
     with open(os.path.join(dataset_dir, "test.txt"), "r") as f:
-        test_scan_names = sorted(set(f.read().strip().split()))
+        test_scan_names = sorted(set(f.read().strip().splitlines()))
 
     scan_dirs = sorted(
         [f for f in glob.glob(os.path.join(dataset_dir, "*")) if os.path.isdir(f)]
@@ -85,11 +85,11 @@ def load_scan(scan, keyframes_file=None):
     frames = {i: {"pose": poses[i]} for i in range(len(poses))}
 
     for f in rgb_imgfiles:
-        i = int(f.split("/")[-1][:-4])
+        i = int(f.split("\\")[-1][:-4])
         frames[i]["rgb_imgfile"] = f
 
     for f in gt_depth_imgfiles:
-        i = int(f.split("/")[-1][:-4])
+        i = int(f.split("\\")[-1][:-4])
         frames[i]["gt_depth_imgfile"] = f
 
     frames = {i: frame for i, frame in frames.items() if good_pose[i]}

@@ -23,7 +23,7 @@ scan_dirs = sorted(
 MAX_DEPTH = 3.5
 voxel_size = 0.02
 margin = int(np.round(0.04 / voxel_size))
-device = "cuda"
+device = "cpu" #device = "cuda"
 
 os.makedirs(args.output_dir, exist_ok=True)
 

@@ -1,0 +1,150 @@
+config: !!python/object/new:box.box.Box
+  dictitems:
+    accelerator: cpu
+    batch_size_per_device: 2
+    crop_size_nvox_train: !!python/object/new:box.box_list.BoxList
+      listitems:
+      - 96
+      - 96
+      - 56
+      state:
+        box_options:
+          box_class: &id001 !!python/name:box.box.Box ''
+          box_dots: false
+          box_duplicates: ignore
+          box_intact_types: !!python/tuple []
+          box_namespace: !!python/tuple
+          - crop_size_nvox_train
+          box_recast: null
+          box_safe_prefix: x
+          camel_killer_box: false
+          conversion_box: true
+          default_box: false
+          default_box_attr: *id001
+          default_box_create_on_get: true
+          default_box_none_transform: true
+          frozen_box: false
+          modify_tuples_box: false
+        box_org_ref: null
+    crop_size_nvox_val: !!python/object/new:box.box_list.BoxList
+      listitems:
+      - 96
+      - 96
+      - 96
+      state:
+        box_options:
+          box_class: *id001
+          box_dots: false
+          box_duplicates: ignore
+          box_intact_types: !!python/tuple []
+          box_namespace: !!python/tuple
+          - crop_size_nvox_val
+          box_recast: null
+          box_safe_prefix: x
+          camel_killer_box: false
+          conversion_box: true
+          default_box: false
+          default_box_attr: *id001
+          default_box_create_on_get: true
+          default_box_none_transform: true
+          frozen_box: false
+          modify_tuples_box: false
+        box_org_ref: null
+    dataset_dir: /data
+    depth_guidance: !!python/object/new:box.box.Box
+      dictitems:
+        bp_weighting: none
+        density_fusion_channel: false
+        depth_scale_augmentation: true
+        enabled: true
+        pred_depth_dir: /tmp/mvs_depth
+        tsdf_fusion_channel: true
+      state:
+        _box_config:
+          __created: true
+          __safe_keys:
+            bp_weighting: bp_weighting
+            density_fusion_channel: density_fusion_channel
+            depth_scale_augmentation: depth_scale_augmentation
+            enabled: enabled
+            pred_depth_dir: pred_depth_dir
+            tsdf_fusion_channel: tsdf_fusion_channel
+          box_class: *id001
+          box_dots: false
+          box_duplicates: ignore
+          box_intact_types: !!python/tuple []
+          box_namespace: !!python/tuple
+          - depth_guidance
+          box_recast: null
+          box_safe_prefix: x
+          camel_killer_box: false
+          conversion_box: true
+          default_box: false
+          default_box_attr: *id001
+          default_box_create_on_get: true
+          default_box_none_transform: true
+          frozen_box: false
+          modify_tuples_box: false
+    do_prediction_timing: false
+    finetune_steps: 10000
+    improved_tsdf_sampling: true
+    initial_lr: 0.001
+    n_devices: 1
+    n_views_train: 20
+    n_views_val: 20
+    no_image_features: false
+    output_sample_rate: 2
+    point_backprojection: true
+    reduce_lr_on_plateau: false
+    run_name: version_0
+    steps: 60000
+    test_keyframes_file: /tmp/mvs_keyframes.json
+    tsdf_dir: /tmp/scannet_tsdf
+    voxel_size: 0.04
+    workers_predict: 8
+    workers_train: 8
+    workers_val: 8
+  state:
+    _box_config:
+      __created: true
+      __safe_keys:
+        accelerator: accelerator
+        batch_size_per_device: batch_size_per_device
+        crop_size_nvox_train: crop_size_nvox_train
+        crop_size_nvox_val: crop_size_nvox_val
+        dataset_dir: dataset_dir
+        depth_guidance: depth_guidance
+        do_prediction_timing: do_prediction_timing
+        finetune_steps: finetune_steps
+        improved_tsdf_sampling: improved_tsdf_sampling
+        initial_lr: initial_lr
+        n_devices: n_devices
+        n_views_train: n_views_train
+        n_views_val: n_views_val
+        no_image_features: no_image_features
+        output_sample_rate: output_sample_rate
+        point_backprojection: point_backprojection
+        reduce_lr_on_plateau: reduce_lr_on_plateau
+        run_name: run_name
+        steps: steps
+        test_keyframes_file: test_keyframes_file
+        tsdf_dir: tsdf_dir
+        voxel_size: voxel_size
+        workers_predict: workers_predict
+        workers_train: workers_train
+        workers_val: workers_val
+      box_class: *id001
+      box_dots: false
+      box_duplicates: ignore
+      box_intact_types: !!python/tuple []
+      box_namespace: !!python/tuple []
+      box_recast: null
+      box_safe_prefix: x
+      camel_killer_box: false
+      conversion_box: true
+      default_box: false
+      default_box_attr: *id001
+      default_box_create_on_get: true
+      default_box_none_transform: true
+      frozen_box: false
+      modify_tuples_box: false
