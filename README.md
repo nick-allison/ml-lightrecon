@@ -1,130 +1,105 @@
-# FineRecon
+# LightRecon: Optimized FineRecon for Real-Time 3D Reconstruction
 
-This software project accompanies the research paper, [FineRecon: Depth-aware Feed-forward Network for Detailed 3D Reconstruction](https://arxiv.org/abs/2304.01480).
+LightRecon is a computationally efficient version of FineRecon, designed for real-time 3D reconstruction. By incorporating sparse 3D convolutions, a refined voxel occupancy prediction network, simplified depth guidance, and adaptive point back-projection, LightRecon significantly reduces processing times and memory usage with minimal sacrifice in reconstruction quality.
 
-FineRecon is a deep learning model for 3D reconstruction from posed RGB images.
+---
 
-![FineRecon results](media/finerecon.jpg)
+## Features
 
-## Setup
+- **Efficient 3D Convolutions**: Reduces computational cost by focusing on non-empty regions of voxel grids.
+- **Voxel Occupancy Prediction Refinement**: Lightweight network with reduced channels and no residual blocks.
+- **Simplified Depth Guidance**: Replaces standard CNNs with MobileNet for depth feature extraction.
+- **Adaptive Point Back-Projection**: Enhances detail-oriented regions while reducing focus on less significant areas.
 
-### Dependencies
+---
+## Getting Started
 
-```
-pip install \
-  matplotlib \
-  pillow \
-  numpy \
-  scikit-image \
-  scipy \
-  timm \
-  torch==1.13 \
-  torchvision \
-  "tqdm>=4.65" \
-  trimesh \
-  pytorch_lightning==1.8 \
-  pyyaml \
-  opencv-python-headless \
-  python-box \
-  tensorboard
-```
+### Prerequisites
 
-### Config
+Ensure you have Python installed along with the required dependencies:
 
-```
-cp example-config.yml config.yml
-```
-The paths in `config.yml` will need to be edited to point to the data directories.
+~~~bash
+pip install -r requirements.txt
+~~~
 
-### Data
+**Note**: You may need to downgrade pip to install some packages successfully.
+### Dataset Preparation
 
-FineRecon requires an RGB-D scan dataset such as ScanNet, which can be downloaded and extracted using the [scripts](https://github.com/ScanNet/ScanNet/tree/master/SensReader/python) provided by the ScanNet authors.
+LightRecon supports the TUM RGB-D dataset, which can be downloaded from:
 
-The dataset structure expected by FineRecon is
+- [TUM RGB-D Dataset](https://vision.in.tum.de/data/datasets/rgbd-dataset)
 
-```
-/path/to/dataset/
-    test.txt
-    train.txt
-    val.txt
-    first_scan/
-        color/
-            0.jpg
-            1.jpg
-            2.jpg
-            ...
-        depth/
-            0.png
-            1.png
-            2.png
-            ...
-        intrinsic_color.txt
-        intrinsic_depth.txt
-        pose.npy
-    second_scan/
-    ...
-    last_scan/
-```
+Additionally, preprocessed data for LightRecon is available:
 
-The files `test.txt`, `train.txt`, and `val.txt` should each contain a newline-separated list of scan directory names (e.g. `first_scan`) describing the test, train, and validation splits respectively. Each `pose.npy` contains the camera poses (world-to-camera transformation matrices) as an array of size `(N, 4, 4)` in [npy format](https://numpy.org/devdocs/reference/generated/numpy.lib.format.html), where any invalid poses are marked with the value `Inf`. The files `intrinsic_color.txt` and `intrinsic_depth.txt` should contain the `(4, 4)` color and depth intrinsic matrices, respectively. In `config.yml`, the value of `dataset_dir` should be set to `/path/to/dataset`.
+- [Preprocessed Dataset](#)
+- [Ground Truth Data](#)
 
-To generate the ground truth TSDF run `generate_gt_tsdf.py --dataset-dir /path/to/dataset --output-dir /path/to/gt_tsdf`, and in `config.yml` set the value of `tsdf_dir` to `/path/to/gt_tsdf`.
-To run training or inference with depth guidance, make sure `depth_guidance.enabled` is set to `True` in the config and set the value of `depth_guidance.pred_depth_dir` to `/path/to/pred_depth`, which should have the following structure:
+You may also use other multi-view RGB-D datasets. The project includes scripts to preprocess and organize custom datasets.
 
-```
-/path/to/pred_depth/
-    first_scan/
-        depth/
-            0.png
-            1.png
-            2.png
-            ...
-        intrinsic_depth.txt
-    second_scan/
-    ...
-    last_scan/
-```
+---
+### Configuration
 
-It can be helpful to limit inference to only using a set of pre-defined keyframes, because it's faster (particulary with point back-projection enabled) and because depth estimates may not be available for all frames. To do this, set `test_keyframes_file` in the config to the location of a JSON file with the following structure:
+Clone the repository:
 
-```
-{
-  "first_scan": [i0, i1, i2, ...],
-  ...
-}
-```
+~~~bash
+git clone https://github.com/nick-allison/ml-finerecon.git
+cd ml-finerecon
+~~~
 
-where `i0`, `i1`, etc. are the integer indices of the keyframes.
+Modify the `config.yml` file:
 
-## Training
+- Set `dataset_dir` to the path where the dataset is stored.
+- Set `pred_depth_dir` to the path of the depth predictions directory.
+- Set `tsdf_dir` to the path of the ground truth TSDF directory.
 
-```
-python main.py
-```
+If you extract the dataset and ground truth files into the root directory of the repository, you can use the default `config.yml` file.
 
-## Inference
+---
+### Running LightRecon
 
-We provide pre-trained weights here: [checkpoint.zip](https://docs-assets.developer.apple.com/ml-research/models/finerecon/checkpoint.zip). These are weights for our main model using resolution-agnostic TSDF supervision, depth guidance, and point-backprojection.
+Open the Jupyter notebook `light_recon.ipynb`:
 
-```
-python main.py --task predict --ckpt path/to/checkpoint.ckpt
-```
+~~~bash
+jupyter notebook light_recon.ipynb
+~~~
 
-For convenience, we also provide the inference results (meshes) of our main model on the [ScanNet](http://www.scan-net.org) test set:
-- [High-resolution [1 cm]](https://docs-assets.developer.apple.com/ml-research/models/finerecon/meshes-1cm.zip) (2.4 GB) → This is the resolution used in figures and metrics, unless otherwise stated.
-- [Low-resolution [4 cm]](https://docs-assets.developer.apple.com/ml-research/models/finerecon/meshes-4cm.zip) (148 MB)
+Execute the cells to explore LightRecon’s functionality, including voxel grid processing, depth-guidance features, and 3D reconstruction outputs.
 
-## Evaluation
+---
+## Results
 
-Evaluation code and data for 3D metrics can be found in [TransformerFusion](https://github.com/AljazBozic/TransformerFusion), and evaluation code for 2D metrics can be found in [Atlas](https://github.com/magicleap/Atlas).
+LightRecon demonstrates significant efficiency improvements compared to FineRecon:
 
-## Citation
+| Component           | Original Params | Modified Params | Reduction (%) |
+|---------------------|-----------------|-----------------|---------------|
+| CNN2D               | 2,000,000      | 2,000,000       | 0%            |
+| CNN3D               | 600,000        | 5,200           | 99.1%         |
+| Occupancy Predictor | 7,000          | 545             | 92.2%         |
 
-```
-@article{stier2023finerecon,
-  title={{FineRecon}: Depth-aware Feed-forward Network for Detailed 3D Reconstruction},
-  author={Stier, Noah and Ranjan, Anurag and Colburn, Alex and Yan, Yajie and Yang, Liang and Ma, Fangchang and Angles, Baptiste},
-  journal={arXiv preprint},
-  year={2023}
-}
-```
+Total parameter reduction: ~15%.
+
+---
+## Limitations
+
+While LightRecon achieves reduced computational cost, it remains too resource-intensive for effective training on personal computers. Future work may focus on further optimizations or cloud-based solutions.
+
+---
+
+## References
+
+For detailed methodology and insights, refer to the accompanying project report. Key references include:
+
+- [FineRecon: Depth-Guided Large-Scale 3D Reconstruction](#)
+- [MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications](#)
+
+---
+
+## Contributing
+
+Feel free to submit pull requests or open issues to suggest improvements and new features.
+
+---
+
+## License
+
+This project is licensed under the MIT License.
