@@ -34,7 +34,7 @@ Additionally, preprocessed data for LightRecon is available:
 - [Preprocessed Dataset](#)
 - [Ground Truth Data](#)
 
-You may also use other multi-view RGB-D datasets. The project includes scripts to preprocess and organize custom datasets.
+This is a very small dataset, so it is recommended that you supplement it with data from other multi-view RGB-D datasets. The project includes scripts to preprocess and organize custom datasets.
 
 ---
 ### Configuration
