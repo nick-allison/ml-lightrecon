@@ -31,8 +31,8 @@ LightRecon supports the TUM RGB-D dataset, which can be downloaded from:
 
 Additionally, preprocessed data for LightRecon is available:
 
-- [Preprocessed Dataset](#)
-- [Ground Truth Data](#)
+- [Preprocessed Dataset](https://drive.google.com/file/d/1QQJmcM96_CU3hDliXw1D2AqMPR7tn3wC/view)
+- [Ground Truth Data](https://drive.google.com/file/d/16iTexGrZkqrZq--cLHblcUU3PHZsNBzU/view)
 
 This is a very small dataset, so it is recommended that you supplement it with data from other multi-view RGB-D datasets. The project includes scripts to preprocess and organize custom datasets.
 
@@ -89,8 +89,8 @@ While LightRecon achieves reduced computational cost, it remains too resource-in
 
 For detailed methodology and insights, refer to the accompanying project report. Key references include:
 
-- [FineRecon: Depth-Guided Large-Scale 3D Reconstruction](#)
-- [MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications](#)
+- [FineRecon: Depth-Guided Large-Scale 3D Reconstruction](https://arxiv.org/abs/2304.01480)
+- [MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications](https://arxiv.org/abs/1704.04861)
 
 ---
 
@@ -102,4 +102,4 @@ Feel free to submit pull requests or open issues to suggest improvements and new
 
 ## License
 
-This project is licensed under the MIT License.
+- [License](https://github.com/nick-allison/ml-lightrecon/blob/main/LICENSE)
